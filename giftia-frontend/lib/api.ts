@@ -1,43 +1,42 @@
-// lib/api.ts — 2週目：searchGifts() の中身を「FastAPI に聞く」に差し替える（完成例）
-// 1週目の lib/sampleGifts.ts は、このファイルに置き換える（ダミーは使わない）。
-
-// 画面が使う商品の形。1週目と同じ（画面・ResultCard は変えない）
-export type Gift = {
-  id: string;          // 商品ID（例 G0001）
-  category: string;    // カテゴリ
-  brand: string;       // ブランド・店名
-  name: string;        // 商品名
-  price: number;       // 価格（円）
-  rating: number;      // レビューの平均
-  reviewCount: number; // レビュー件数
-};
-
-// 画面から渡す検索条件（2つのタブの分をまとめて持つ）
-export type SearchCondition = {
-  keyword: string;    // いまの検索：キーワード
-  category: string;   // いまの検索：カテゴリー（空ならすべて）
-  indivWrap: boolean; // 取引先へのお礼：個包装だけ
-  priceBand: string;  // 取引先へのお礼："" | "3000" | "5000"
-};
+// lib/api.ts — FastAPI との通信はすべてここにまとめる（画面からは fetch を直接呼ばない）
+import type { SearchCondition, SearchOptions, SearchResponse } from "@/types/search";
 
 // API の場所。NEXT_PUBLIC_ の値はブラウザに配られる＝秘密は置かない（.env.local に書く）
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-// 入力した条件をサーバー（FastAPI）に送り、結果（Gift の配列）をもらう
-export async function searchGifts(c: SearchCondition): Promise<Gift[]> {
-  // ① 条件を URL のクエリ（?q=...&category=...）に組み立てる。空の条件は送らない
+// API がエラーのときに返す形（FastAPI の { detail: ... }）
+type ApiError = { detail?: unknown };
+
+// GET して JSON を返す。失敗したら、画面に出せる日本語のメッセージで Error を投げる
+async function getJson<T>(path: string, params?: URLSearchParams): Promise<T> {
+  const query = params && params.toString() ? `?${params.toString()}` : "";
+  let res: Response;
+  try {
+    res = await fetch(`${API}${path}${query}`);
+  } catch {
+    throw new Error("APIにつながりません。バックエンドが起動しているか確かめてください");
+  }
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as ApiError;
+    const detail = typeof body.detail === "string" ? body.detail : `エラーが起きました（HTTP ${res.status}）`;
+    throw new Error(detail);
+  }
+  return (await res.json()) as T;
+}
+
+// 検索画面で選べるカテゴリー・シーン・関係性
+export async function fetchSearchOptions(): Promise<SearchOptions> {
+  return getJson<SearchOptions>("/api/v1/options");
+}
+
+// 商品を探す（FR-02・FR-04・FR-06）。選んだ条件だけを送る（空の条件は送らない）
+export async function searchProducts(c: SearchCondition): Promise<SearchResponse> {
   const params = new URLSearchParams();
-  if (c.keyword) params.set("q", c.keyword);
+  if (c.keyword.trim()) params.set("q", c.keyword.trim());
   if (c.category) params.set("category", c.category);
-  if (c.indivWrap) params.set("indiv_wrap", "true");
-  if (c.priceBand === "3000") { params.set("price_min", "3000"); params.set("price_max", "4999"); } // 3,000以上 5,000未満
-  if (c.priceBand === "5000") { params.set("price_min", "5000"); params.set("price_max", "9999"); } // 5,000以上 10,000未満
-
-  // ② fetch で API を呼ぶ（通信が終わるまで待つ＝await）
-  const res = await fetch(`${API}/api/search?${params.toString()}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-  // ③ 返ってきた JSON を読む。{ total, results } の results が Gift の配列
-  const data = await res.json();
-  return data.results;
+  if (c.scene) params.set("scene", c.scene);
+  if (c.relationship) params.set("relationship", c.relationship);
+  if (c.priceBand?.min != null) params.set("price_min", String(c.priceBand.min));
+  if (c.priceBand?.max != null) params.set("price_max", String(c.priceBand.max));
+  return getJson<SearchResponse>("/api/v1/search", params);
 }
