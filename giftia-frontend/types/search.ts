@@ -7,20 +7,23 @@ export type SearchItem = {
   category: string;
   brand: string;
   price: number;
-  rating: number | null;        // レビューの平均星。レビューなしは null
-  review_count: number;
-  buyer_count: number | null;   // 選んだシーン・関係性で直近1年に買った人数。3人未満・未選択は null
-  reaction_avg: number | null;  // 相手の反応の平均（1〜4）。3件未満は null
-  reaction_count: number;       // 相手の反応の件数
-  rank: number;
-  reason: string | null;        // 根拠の文（「送別 × 同僚 に贈った人が 12人 選んでいます」）。未選択は null
-  is_supplemented: boolean;     // シーンだけ一致する注文で補った候補か
+  description: string;                 // 説明の全文。カードでは先頭60文字に切る
+  rating: number | null;               // 商品全体の★。レビューなしは null
+  review_count: number;                // 商品全体のレビュー件数
+  rank: number;                        // 並び順の順位（1から）
+  buyer_count: number | null;          // 選んだシーンで直近1年に買った人数。シーンなしは null
+  reason: string | null;               // 根拠①の文（「送別で選ばれた商品の中で 2位（12人）」）。シーンなしは null
+  scene_rating_avg: number | null;     // 根拠②同じシーンの★の平均。なし・シーンなしは null
+  scene_review_count: number;          // 根拠②の件数。なし・シーンなしは 0
+  review_rating: number | null;        // 根拠③コメントがある最新のレビューの★。なければ null
+  review_comment: string | null;       // 根拠③のコメント（全文。カードでは40文字に切る）。なければ null
+  is_supplemented: boolean;            // 余力（関係性）：シーンだけ一致する注文で補った候補か
 };
 
 export type SearchResponse = {
   total: number;
-  uses_purchase_history: boolean; // シーン・関係性の購入実績で並べたか（false なら販売数の順）
-  supplemented: boolean;          // 候補が少なく、シーンだけ一致する商品で補ったか
+  uses_purchase_history: boolean; // シーンの購入実績で並べたか（false なら販売数の順）
+  supplemented: boolean;          // 余力（関係性）：候補が少なく、シーンだけ一致する商品で補ったか
   results: SearchItem[];
 };
 

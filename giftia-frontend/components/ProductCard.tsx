@@ -12,9 +12,6 @@ export default function ProductCard({ item }: ProductCardProps) {
       <h3 className="name">{item.product_name}</h3>
       <p className="price">{item.price.toLocaleString()}円</p>
       {item.reason && <p className="reason">{item.reason}</p>}
-      {item.reaction_avg !== null && (
-        <p className="meta">相手の反応 ★{item.reaction_avg.toFixed(1)}（{item.reaction_count}件・贈った人の回答）</p>
-      )}
       <p className="meta">
         {item.rating !== null ? `レビュー ★${item.rating.toFixed(1)}（${item.review_count}件）` : "レビューなし"}
       </p>

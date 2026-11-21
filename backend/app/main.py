@@ -8,7 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import settings
 from app.database.errors import is_missing_schema
-from app.routers import health, options, search
+from app.routers import health, options, products, search
 
 logger = logging.getLogger(__name__)
 
@@ -24,12 +24,13 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(options.router)
 app.include_router(search.router)
+app.include_router(products.router)
 
 
 MESSAGE_ENV_MISSING = "データベースの設定が見つかりません"
 MESSAGE_SCHEMA_MISSING = (
-    "検索に必要なデータ（関係性・相手の反応）がまだデータベースにありません。"
-    "backend/sql の 001・002 が班の DB に流されているか確かめてください"
+    "必要なテーブルや列がデータベースにありません。"
+    "backend/sql の SQL が班の DB に流されているか確かめてください"
 )
 MESSAGE_DB_ERROR = "データベースに接続できません。時間をおいて試してください"
 
@@ -45,7 +46,7 @@ def handle_env_error(_: Request, exc: EnvironmentError) -> JSONResponse:
 def handle_db_error(_: Request, exc: SQLAlchemyError) -> JSONResponse:
     """SQL が失敗した。原因に合ったメッセージを返し、詳細はサーバーのログにだけ出す"""
     if is_missing_schema(exc):
-        logger.error("DB の列・テーブルが足りません（sql/001・002 が未実行の可能性）: %s", exc.orig)
+        logger.error("DB の列・テーブルが足りません（backend/sql が未実行の可能性）: %s", exc.orig)
         return JSONResponse(status_code=503, content={"detail": MESSAGE_SCHEMA_MISSING})
     # ここはもう except の外なので、logger.exception ではなく exc_info で例外を渡す
     logger.error("DB エラー: %s", exc, exc_info=exc)
