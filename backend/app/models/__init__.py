@@ -1,3 +1,3 @@
-from app.models.tables import Base, GiftFeedback, Order, OrderItem, Product
+from app.models.tables import Base, GiftFeedback, Order, OrderItem, Product, Review
 
-__all__ = ["Base", "GiftFeedback", "Order", "OrderItem", "Product"]
+__all__ = ["Base", "GiftFeedback", "Order", "OrderItem", "Product", "Review"]

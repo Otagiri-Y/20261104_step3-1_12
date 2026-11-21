@@ -24,7 +24,7 @@ def _validate(db: Session, query: ProductSearchQuery) -> None:
         raise HTTPException(status_code=422, detail="価格の下限が上限より大きくなっています")
     if query.category is not None and query.category not in list_categories(db):
         raise HTTPException(status_code=422, detail=f"選べないカテゴリーです：{query.category}")
-    if query.scene is not None and query.scene not in list_scenes(db):
+    if query.scene is not None and query.scene not in list_scenes():
         raise HTTPException(status_code=422, detail=f"選べないシーンです：{query.scene}")
     if query.relationship is not None and query.relationship not in list_relationships(db, get_schema_status(db)):
         raise HTTPException(status_code=422, detail=f"選べない関係性です：{query.relationship}")
@@ -35,14 +35,14 @@ def search(
     db: Annotated[Session, Depends(get_db)],
     q: Annotated[str, Query(max_length=100, description="キーワード（空白区切りで複数。すべてを含む商品）")] = "",
     category: Annotated[str | None, Query(max_length=50, description="カテゴリー（/api/v1/options の値。空ならすべて）")] = None,
-    scene: Annotated[str | None, Query(max_length=50, description="贈るシーン（/api/v1/options の値。空なら指定なし）")] = None,
-    relationship: Annotated[str | None, Query(max_length=20, description="相手との関係（/api/v1/options の値。空なら指定なし）")] = None,
+    scene: Annotated[str | None, Query(max_length=20, description="贈るシーン（/api/v1/options の4つ。空なら指定なし）")] = None,
+    relationship: Annotated[str | None, Query(max_length=20, description="余力：相手との関係（/api/v1/options の値。空なら指定なし）")] = None,
     price_min: Annotated[int | None, Query(ge=0, description="価格の下限（以上）")] = None,
     price_max: Annotated[int | None, Query(ge=0, description="価格の上限（以下）")] = None,
     limit: Annotated[int, Query(ge=1, le=100, description="返す件数")] = 20,
 ) -> SearchResponse:
-    """FR-02：選んだ条件をすべて満たす商品を返す。
-    シーンか関係性を選んだら、同じ状況の購入実績で絞り、決めた順（6.2）に並べる"""
+    """FR-02・FR-04・FR-06：選んだ条件をすべて満たす商品を返す。
+    シーンを選んだら、同じシーンの購入実績で絞り、決めた順（6.2）に並べて根拠を付ける"""
     query = ProductSearchQuery(
         q=q.strip(),
         category=_blank_to_none(category),

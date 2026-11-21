@@ -1,13 +1,12 @@
 """DB のテーブルと Python のクラスの対応。
 
 検索で使う列だけを定義している（DB にはほかの列もある）。
-★「要確認」の列名は、配布のデータ定義（データ定義.md）が手元になかったため仮置きしている。
-  実際の列名と違ったら、Column の第1引数（DB 上の列名）だけ直せばよい。
+列名と型は、班の DB の SHOW CREATE TABLE（2026-11-21 確認）に合わせている。
 """
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, SmallInteger, String, Text
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, Numeric, SmallInteger, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -16,17 +15,17 @@ class Base(DeclarativeBase):
 
 
 class Product(Base):
-    """products（商品・約8,000件）。列名は Exhibit 4「商品の既存カラム」と同じ"""
+    """products（商品・約8,000件）"""
 
     __tablename__ = "products"
 
-    product_id: Mapped[str] = mapped_column(String(20), primary_key=True)
-    product_name: Mapped[str] = mapped_column(String(200))
-    category: Mapped[str] = mapped_column(String(50))
-    brand: Mapped[str] = mapped_column(String(100))
-    description: Mapped[str | None] = mapped_column(Text)
+    product_id: Mapped[str] = mapped_column(String(10), primary_key=True)
+    product_name: Mapped[str] = mapped_column(String(100))
+    category: Mapped[str] = mapped_column(String(30))
+    brand: Mapped[str] = mapped_column(String(50))
+    description: Mapped[str] = mapped_column(Text)
     price: Mapped[int] = mapped_column(Integer)
-    rating: Mapped[Decimal | None] = mapped_column(Numeric(2, 1))
+    rating: Mapped[Decimal | None] = mapped_column(Numeric(2, 1))  # 商品全体の★
     review_count: Mapped[int] = mapped_column(Integer, default=0)
     sales_count: Mapped[int] = mapped_column(Integer, default=0)  # 直近1年の販売数
     stock: Mapped[int] = mapped_column(Integer, default=0)
@@ -37,29 +36,40 @@ class Order(Base):
 
     __tablename__ = "orders"
 
-    order_id: Mapped[str] = mapped_column(String(20), primary_key=True)
-    # 要確認：注文した会員の列名
-    user_id: Mapped[str] = mapped_column("user_id", String(20))
-    # 要確認：注文日時の列名
-    ordered_at: Mapped[datetime] = mapped_column("ordered_at", DateTime)
-    # 分析部門が推定したシーン（Exhibit 4）
-    estimated_scene: Mapped[str | None] = mapped_column(String(50))
-    # チームで追加する列（要件定義書 5.2）。sql/001 で追加する
+    order_id: Mapped[str] = mapped_column(String(12), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(20))
+    ordered_at: Mapped[datetime] = mapped_column(DateTime)
+    # 分析部門が注文ごとに推定したシーン（Exhibit 4）
+    estimated_scene: Mapped[str] = mapped_column(String(20))
+    # 余力：チームで追加する列（要件定義書 5.2）。sql/001 で追加する
     relationship: Mapped[str | None] = mapped_column(String(20))
 
 
 class OrderItem(Base):
-    """order_items（注文明細）。要確認：明細自体の主キー列は検索に使わないため、
-    (order_id, product_id) を ORM 上の主キーとして扱う"""
+    """order_items（注文明細）。主キーは (order_id, line_no)"""
 
     __tablename__ = "order_items"
 
     order_id: Mapped[str] = mapped_column(ForeignKey("orders.order_id"), primary_key=True)
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.product_id"), primary_key=True)
+    line_no: Mapped[int] = mapped_column(Integer, primary_key=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.product_id"))
+
+
+class Review(Base):
+    """reviews（購入者のレビュー）。注文IDはないので、注文とは user_id × product_id で結ぶ（要件定義書 5.2）"""
+
+    __tablename__ = "reviews"
+
+    review_id: Mapped[str] = mapped_column(String(12), primary_key=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.product_id"))
+    user_id: Mapped[str] = mapped_column(String(20))
+    rating: Mapped[int] = mapped_column(Integer)  # 1〜5
+    comment: Mapped[str | None] = mapped_column(Text)  # 空のこともある（コメント付きは約3割）
+    posted_at: Mapped[date] = mapped_column(Date)  # 日付だけ（時刻はない）
 
 
 class GiftFeedback(Base):
-    """gift_feedback（相手の反応・チームで新規作成。要件定義書 5.2）。sql/001 で作る"""
+    """gift_feedback（相手の反応・Phase2。要件定義書 5.2）。sql/001 で作る。範囲Bでは使わない"""
 
     __tablename__ = "gift_feedback"
 
