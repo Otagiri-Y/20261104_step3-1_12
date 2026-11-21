@@ -6,7 +6,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, Numeric, SmallInteger, String, Text
+from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, Numeric, SmallInteger, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -78,3 +78,20 @@ class GiftFeedback(Base):
     reaction: Mapped[int] = mapped_column(SmallInteger)  # 4:とても喜んだ〜1:いまひとつ
     comment: Mapped[str | None] = mapped_column(Text)
     answered_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class SiteEventLog(Base):
+    """site_event_log（計測の記録・範囲Bで新規。要件定義書 5.2・FR-11）。sql/003 で作る。
+    1行が1つの行動。個人を特定する情報は持たない"""
+
+    __tablename__ = "site_event_log"
+
+    # 班の DB では BIGINT。テストの SQLite は INTEGER でないと自動で番号が振られないので、型を出し分ける
+    event_id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True
+    )
+    session_id: Mapped[str] = mapped_column(String(36))
+    event_type: Mapped[str] = mapped_column(String(20))  # pdp_view／add_to_cart
+    product_id: Mapped[str] = mapped_column(String(10))
+    scene: Mapped[str | None] = mapped_column(String(20))  # なしは NULL
+    occurred_at: Mapped[datetime] = mapped_column(DateTime)  # API が受け取った時刻（日本時間）

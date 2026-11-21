@@ -3,6 +3,8 @@ import os
 
 # app を import する前に設定する：.env（接続情報）を読まない
 os.environ["GIFTIA_SKIP_DOTENV"] = "1"
+# CORS のテスト用：画面（npm run dev）の URL を許可した状態にする
+os.environ.setdefault("CORS_ORIGINS", "http://localhost:3000")
 
 from collections.abc import Iterator  # noqa: E402
 from datetime import date, datetime  # noqa: E402

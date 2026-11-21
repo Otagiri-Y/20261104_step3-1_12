@@ -1,11 +1,13 @@
 // components/ProductDetailView.tsx — 商品詳細（FR-01）
 // いつも出す：商品名・価格・カテゴリー・ブランド・説明（全文）・商品全体の★
 // シーンを引き継いだとき：買った人数・同じシーンの★と件数・同じシーンで買った人のレビュー一覧（新しい順）
-// 「カートに入れる」は置き場所だけ用意する（記録と案内は PR③ で付ける）
+// 計測（FR-11・FR-12）：表示できたら「商品詳細を見た」を記録し、「カートに入れる」で「カートに入れた」を記録する
 "use client"; // API 呼び出しとボタンの処理があるため、ブラウザで動かす
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import AddToCartButton from "@/components/AddToCartButton";
+import RecordPdpView from "@/components/RecordPdpView";
 import { ApiError, fetchProductDetail } from "@/lib/api";
 import { lastSearchHref } from "@/lib/searchQuery";
 import { formatRating } from "@/lib/text";
@@ -88,6 +90,8 @@ export default function ProductDetailView({ productId, scene }: ProductDetailVie
   return (
     <>
       {backButton}
+      {/* 表示できた商品・シーンで「商品詳細を見た」を1回記録する（画面には何も出ない） */}
+      <RecordPdpView productId={d.product_id} scene={d.scene} />
       <article className="detail">
         <p className="meta">{d.category}・{d.brand}</p>
         <h2 className="name">{d.product_name}</h2>
@@ -97,12 +101,7 @@ export default function ProductDetailView({ productId, scene }: ProductDetailVie
         </p>
         <p className="description">{d.description}</p>
 
-        <div className="cartArea">
-          {/* PR③：ここを AddToCartButton に置き換える（押すと記録を残し、「実際には入りません」の案内を出す） */}
-          <button type="button" className="cartButton" disabled>
-            カートに入れる
-          </button>
-        </div>
+        <AddToCartButton productId={d.product_id} scene={d.scene} />
 
         {d.scene && d.buyer_count !== null && (
           <section className="evidence">

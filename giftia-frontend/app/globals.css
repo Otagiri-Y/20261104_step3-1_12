@@ -220,3 +220,8 @@ body {
   margin: 2px 0;
   font-size: 14px;
 }
+.cartMessage {
+  font-size: 14px;
+  color: #1a7f37;
+  margin: 6px 0 0;
+}
