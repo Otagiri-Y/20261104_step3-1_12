@@ -8,7 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import settings
 from app.database.errors import is_missing_schema
-from app.routers import health, options, products, search
+from app.routers import events, health, options, products, search
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ app = FastAPI(title="Giftia Search API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],  # POST は計測の記録（/api/v1/events）
     allow_headers=["*"],
 )
 
@@ -25,6 +25,7 @@ app.include_router(health.router)
 app.include_router(options.router)
 app.include_router(search.router)
 app.include_router(products.router)
+app.include_router(events.router)
 
 
 MESSAGE_ENV_MISSING = "データベースの設定が見つかりません"

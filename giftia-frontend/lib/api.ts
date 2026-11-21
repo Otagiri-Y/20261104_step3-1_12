@@ -1,4 +1,5 @@
 // lib/api.ts — FastAPI との通信はすべてここにまとめる（画面からは fetch を直接呼ばない）
+import type { EventCreate, EventCreated } from "@/types/events";
 import type { ProductDetail, SearchCondition, SearchOptions, SearchResponse } from "@/types/search";
 
 // API の場所。NEXT_PUBLIC_ の値はブラウザに配られる＝秘密は置かない（.env.local に書く）
@@ -60,4 +61,13 @@ export async function fetchProductDetail(productId: string, scene: string): Prom
   const params = new URLSearchParams();
   if (scene) params.set("scene", scene);
   return requestJson<ProductDetail>(withQuery(`/api/v1/products/${encodeURIComponent(productId)}`, params));
+}
+
+// 計測の記録（FR-11・FR-12）。商品詳細を見た・カートに入れた（模擬）を1行残す
+export async function postEvent(event: EventCreate): Promise<EventCreated> {
+  return requestJson<EventCreated>("/api/v1/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(event),
+  });
 }
